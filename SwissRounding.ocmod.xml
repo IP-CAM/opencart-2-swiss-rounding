@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="utf-8"?>
+<modification>
+	<code>SwissRounding</code>
+	<name>SwissRounding: Add rounding to 0.05</name>
+	<version>1.0.0</version>
+	<author>Customweb GmbH</author>
+	<link>http://github.com/wallee-payment/opencart-2.0-rounding</link>
+	<file path="catalog/model/total/*.php">
+		<operation>
+			<search><![CDATA[extends Model {]]></search>
+			<add position="after"><![CDATA[
+			private function rndfunc($x){
+    return round($x * 2, 1) / 2;
+}
+			]]></add>
+		</operation>
+		<operation>
+			<search><![CDATA[
+	public function getTotal(&$total_data, &$total, &$taxes) {
+			]]></search>
+			<add position="replace"><![CDATA[
+        public function getTotal(&$total_data, &$total, &$taxes) {
+            $this->getTotalOld($total_data, $total, $taxes);
+            foreach($total_data as &$single_data) { // must loop all as sort order cannot be guaranteed, and total may add multiple total_data
+                $pre_round = $single_data['value'];
+                $rounded = $this->rndfunc($pre_round);
+                $difference = $pre_round - $rounded;
+                $single_data['value'] = $rounded;
+                if($difference) {
+                    $total -= $difference; // TODO
+                }
+            }
+        }
+                                
+        public function getTotalOld(&$total_data, &$total, &$taxes) {
+            ]]></add>
+		</operation>
+	</file>
+	<file path="system/library/cart.php">
+		<operation>
+			<search><![CDATA[class Cart {]]></search>
+			<add position="after"><![CDATA[
+			private function rndfunc($x){
+    return round($x * 2, 1) / 2;
+}
+			]]></add>
+		</operation>
+		<operation>
+			<search><![CDATA[($price + $option_price) * $quantity]]></search>
+                        <add position="replace"><![CDATA[$this->rndfunc(($price + $option_price) * $quantity)]]></add>
+		</operation>
+        </file>
+	<file path="catalog/model/journal2/checkout.php">
+            		<operation>
+			<search><![CDATA[class ModelJournal2Checkout extends Model {]]></search>
+			<add position="after"><![CDATA[
+			private function rndfunc($x){
+    return round($x * 2, 1) / 2;
+}
+			]]></add>
+		</operation>
+		<operation>
+			<search><![CDATA[Journal2Utils::currencyFormat($this->tax->calculate($product['price'], $product['tax_class_id'], $this->config->get('config_tax')) * $product['quantity'])]]></search>
+                        <add position="replace"><![CDATA[Journal2Utils::currencyFormat($this->rndfunc($this->tax->calculate($product['price'], $product['tax_class_id'], $this->config->get('config_tax')) * $product['quantity']))]]></add>
+		</operation>
+
+        </file>
+	<file path="system/library/*/service/line_item.php">
+            		<operation>
+			<search><![CDATA[class LineItem extends AbstractService {]]></search>
+			<add position="after"><![CDATA[
+			private function rndfunc($x){
+    return round($x * 2, 1) / 2;
+}
+			]]></add>
+		</operation>
+		<operation>
+			<search><![CDATA[$discount = $product['total'] / 100 * $this->coupon['discount'];]]></search>
+                        <add position="replace"><![CDATA[$discount = $this->rndfunc($product['total'] / 100 * $this->coupon['discount']);]]></add>
+		</operation>
+
+        </file>
+</modification>
